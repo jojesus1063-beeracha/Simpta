@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Logo from "./Logo";
 
 const navItem =
   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors";
@@ -18,8 +19,8 @@ const Layout = ({ title, children }) => {
     <div className="flex h-screen bg-slate-50 font-body">
       <aside className="flex w-60 flex-col justify-between bg-ink px-4 py-6 text-slate-300">
         <div>
-          <div className="mb-8 px-2 font-display text-lg font-bold tracking-tight text-white">
-            Task<span className="text-teal-400">Manager</span>
+          <div className="mb-8 px-2">
+            <Logo compact />
           </div>
           <nav className="space-y-1">
             {user?.role === "admin" && (
