@@ -1,21 +1,11 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-/**
- * Send an email. Fails silently (logs only) so a broken mail config
- * never breaks the API request that triggered it.
- */
 const sendEmail = async ({ to, subject, html }) => {
   try {
-    await transporter.sendMail({
-      from: `"Task Manager" <${process.env.GMAIL_USER}>`,
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "Task Manager <onboarding@resend.dev>",
       to,
       subject,
       html,
