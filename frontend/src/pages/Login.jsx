@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/Logo";
 
@@ -79,6 +79,13 @@ const Login = () => {
               {loading ? "Logging in…" : "Log in"}
             </button>
           </form>
+
+          <p className="mt-6 text-center text-sm text-slate-500">
+            New to Simpta?{" "}
+            <Link to="/register" className="font-medium text-teal-600 hover:underline">
+              Create your workspace
+            </Link>
+          </p>
         </div>
       </div>
     </div>

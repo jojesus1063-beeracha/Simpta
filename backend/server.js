@@ -2,6 +2,9 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
+const User = require("./models/User");
+const Task = require("./models/Task");
+const Company = require("./models/Company");
 
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -20,6 +23,18 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
+const migrateLegacyData = async () => {
+  const orphanedUsers = await User.find({ company: { $exists: false } });
+  if (orphanedUsers.length === 0) return;
+
+  console.log(`Migrating ${orphanedUsers.length} pre-existing user(s) into a legacy company...`);
+  const legacyCompany = await Company.create({ name: "Legacy Workspace" });
+  await User.updateMany({ company: { $exists: false } }, { company: legacyCompany._id });
+  await Task.updateMany({ company: { $exists: false } }, { company: legacyCompany._id });
+  console.log("Migration complete.");
+};
+
+connectDB().then(async () => {
+  await migrateLegacyData();
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });

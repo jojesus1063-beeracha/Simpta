@@ -6,15 +6,11 @@ const { sendEmail } = require("../utils/sendEmail");
 
 const router = express.Router();
 
-// @route  GET /api/users
-// @desc   List all users (admin only) - used to populate the "assign to" dropdown
 router.get("/", protect, adminOnly, async (req, res) => {
-  const users = await User.find().select("-password").sort({ createdAt: -1 });
+  const users = await User.find({ company: req.user.company }).select("-password").sort({ createdAt: -1 });
   res.json(users);
 });
 
-// @route  POST /api/users
-// @desc   Admin creates a new user account and emails them a temporary password
 router.post("/", protect, adminOnly, async (req, res) => {
   try {
     const { name, email, role } = req.body;
@@ -29,6 +25,7 @@ router.post("/", protect, adminOnly, async (req, res) => {
       email,
       password: tempPassword,
       role: role === "admin" ? "admin" : "member",
+      company: req.user.company,
     });
 
     await sendEmail({
@@ -54,12 +51,11 @@ router.post("/", protect, adminOnly, async (req, res) => {
   }
 });
 
-// @route  DELETE /api/users/:id
 router.delete("/:id", protect, adminOnly, async (req, res) => {
   if (req.params.id === String(req.user._id)) {
     return res.status(400).json({ message: "You cannot delete your own account" });
   }
-  await User.findByIdAndDelete(req.params.id);
+  await User.findOneAndDelete({ _id: req.params.id, company: req.user.company });
   res.json({ message: "User removed" });
 });
 

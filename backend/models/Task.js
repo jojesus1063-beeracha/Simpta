@@ -17,6 +17,7 @@ const taskSchema = new mongoose.Schema(
       default: "medium",
     },
     dueDate: { type: Date },
+    company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
   },
   { timestamps: true }
 );

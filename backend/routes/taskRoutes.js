@@ -6,10 +6,11 @@ const { sendEmail, taskAssignedEmail, taskStatusUpdatedEmail } = require("../uti
 
 const router = express.Router();
 
-// @route  GET /api/tasks
-// @desc   Admin sees every task; members see only tasks assigned to them
 router.get("/", protect, async (req, res) => {
-  const filter = req.user.role === "admin" ? {} : { assignedTo: req.user._id };
+  const filter =
+    req.user.role === "admin"
+      ? { company: req.user.company }
+      : { company: req.user.company, assignedTo: req.user._id };
   const tasks = await Task.find(filter)
     .populate("assignedTo", "name email")
     .populate("assignedBy", "name email")
@@ -17,14 +18,12 @@ router.get("/", protect, async (req, res) => {
   res.json(tasks);
 });
 
-// @route  POST /api/tasks
-// @desc   Admin creates a task and assigns it to a user; assignee gets an email
 router.post("/", protect, adminOnly, async (req, res) => {
   try {
     const { title, description, assignedTo, priority, dueDate } = req.body;
     if (!title || !assignedTo) return res.status(400).json({ message: "Title and assignee are required" });
 
-    const assignee = await User.findById(assignedTo);
+    const assignee = await User.findOne({ _id: assignedTo, company: req.user.company });
     if (!assignee) return res.status(404).json({ message: "Assignee not found" });
 
     const task = await Task.create({
@@ -34,6 +33,7 @@ router.post("/", protect, adminOnly, async (req, res) => {
       assignedBy: req.user._id,
       priority,
       dueDate,
+      company: req.user.company,
     });
 
     const populated = await task.populate([
@@ -49,12 +49,13 @@ router.post("/", protect, adminOnly, async (req, res) => {
   }
 });
 
-// @route  PATCH /api/tasks/:id/status
-// @desc   Member (or admin) updates a task's status; the admin who assigned it gets notified
 router.patch("/:id/status", protect, async (req, res) => {
   try {
     const { status } = req.body;
-    const task = await Task.findById(req.params.id).populate("assignedBy", "name email");
+    const task = await Task.findOne({ _id: req.params.id, company: req.user.company }).populate(
+      "assignedBy",
+      "name email"
+    );
     if (!task) return res.status(404).json({ message: "Task not found" });
 
     const isOwner = String(task.assignedTo) === String(req.user._id);
@@ -75,12 +76,10 @@ router.patch("/:id/status", protect, async (req, res) => {
   }
 });
 
-// @route  PUT /api/tasks/:id
-// @desc   Admin edits task details (reassign, change priority/due date/etc.)
 router.put("/:id", protect, adminOnly, async (req, res) => {
   try {
     const { title, description, assignedTo, priority, dueDate, status } = req.body;
-    const task = await Task.findById(req.params.id);
+    const task = await Task.findOne({ _id: req.params.id, company: req.user.company });
     if (!task) return res.status(404).json({ message: "Task not found" });
 
     const reassigned = assignedTo && String(assignedTo) !== String(task.assignedTo);
@@ -110,28 +109,29 @@ router.put("/:id", protect, adminOnly, async (req, res) => {
   }
 });
 
-// @route  DELETE /api/tasks/:id
 router.delete("/:id", protect, adminOnly, async (req, res) => {
-  await Task.findByIdAndDelete(req.params.id);
+  await Task.findOneAndDelete({ _id: req.params.id, company: req.user.company });
   res.json({ message: "Task removed" });
 });
 
-// @route  GET /api/tasks/analytics/summary
-// @desc   Admin-only aggregated stats for the dashboard (counts by status, priority, per user)
 router.get("/analytics/summary", protect, adminOnly, async (req, res) => {
+  const companyId = req.user.company;
+
   const [byStatus, byPriority, byUser, total] = await Promise.all([
-    Task.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
-    Task.aggregate([{ $group: { _id: "$priority", count: { $sum: 1 } } }]),
+    Task.aggregate([{ $match: { company: companyId } }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
+    Task.aggregate([{ $match: { company: companyId } }, { $group: { _id: "$priority", count: { $sum: 1 } } }]),
     Task.aggregate([
+      { $match: { company: companyId } },
       { $group: { _id: "$assignedTo", count: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } } } },
       { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
       { $unwind: "$user" },
       { $project: { name: "$user.name", count: 1, completed: 1 } },
     ]),
-    Task.countDocuments(),
+    Task.countDocuments({ company: companyId }),
   ]);
 
   const overdue = await Task.countDocuments({
+    company: companyId,
     dueDate: { $lt: new Date() },
     status: { $ne: "completed" },
   });
