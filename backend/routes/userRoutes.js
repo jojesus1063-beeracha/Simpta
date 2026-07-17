@@ -2,16 +2,17 @@ const express = require("express");
 const crypto = require("crypto");
 const User = require("../models/User");
 const { protect, adminOnly } = require("../middleware/auth");
+const { checkLicense } = require("../middleware/license");
 const { sendEmail } = require("../utils/sendEmail");
 
 const router = express.Router();
 
-router.get("/", protect, adminOnly, async (req, res) => {
+router.get("/", protect, checkLicense, adminOnly, async (req, res) => {
   const users = await User.find({ company: req.user.company }).select("-password").sort({ createdAt: -1 });
   res.json(users);
 });
 
-router.post("/", protect, adminOnly, async (req, res) => {
+router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   try {
     const { name, email, role } = req.body;
     if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
@@ -51,7 +52,7 @@ router.post("/", protect, adminOnly, async (req, res) => {
   }
 });
 
-router.delete("/:id", protect, adminOnly, async (req, res) => {
+router.delete("/:id", protect, checkLicense, adminOnly, async (req, res) => {
   if (req.params.id === String(req.user._id)) {
     return res.status(400).json({ message: "You cannot delete your own account" });
   }

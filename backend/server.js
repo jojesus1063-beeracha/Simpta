@@ -9,6 +9,7 @@ const Company = require("./models/Company");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const taskRoutes = require("./routes/taskRoutes");
+const superAdminRoutes = require("./routes/superAdminRoutes");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/superadmin", superAdminRoutes);
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
@@ -28,13 +30,30 @@ const migrateLegacyData = async () => {
   if (orphanedUsers.length === 0) return;
 
   console.log(`Migrating ${orphanedUsers.length} pre-existing user(s) into a legacy company...`);
-  const legacyCompany = await Company.create({ name: "Legacy Workspace" });
+  const legacyCompany = await Company.create({ name: "Legacy Workspace", licenseStatus: "active" });
   await User.updateMany({ company: { $exists: false } }, { company: legacyCompany._id });
   await Task.updateMany({ company: { $exists: false } }, { company: legacyCompany._id });
   console.log("Migration complete.");
 };
 
+const grantSuperAdmin = async () => {
+  const email = process.env.SUPER_ADMIN_EMAIL;
+  if (!email) return;
+
+  const user = await User.findOne({ email: email.toLowerCase() });
+  if (!user) {
+    console.log(`SUPER_ADMIN_EMAIL is set to ${email}, but no matching account exists yet.`);
+    return;
+  }
+  if (!user.isSuperAdmin) {
+    user.isSuperAdmin = true;
+    await user.save();
+    console.log(`Granted super admin access to ${email}.`);
+  }
+};
+
 connectDB().then(async () => {
   await migrateLegacyData();
+  await grantSuperAdmin();
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });

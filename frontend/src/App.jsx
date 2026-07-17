@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
 import Team from "./pages/Team";
+import SuperAdmin from "./pages/SuperAdmin";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -33,6 +34,14 @@ function App() {
         element={
           <ProtectedRoute adminOnly>
             <Team />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute superAdminOnly>
+            <SuperAdmin />
           </ProtectedRoute>
         }
       />

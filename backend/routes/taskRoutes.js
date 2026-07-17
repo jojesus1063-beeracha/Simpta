@@ -2,11 +2,12 @@ const express = require("express");
 const Task = require("../models/Task");
 const User = require("../models/User");
 const { protect, adminOnly } = require("../middleware/auth");
+const { checkLicense } = require("../middleware/license");
 const { sendEmail, taskAssignedEmail, taskStatusUpdatedEmail } = require("../utils/sendEmail");
 
 const router = express.Router();
 
-router.get("/", protect, async (req, res) => {
+router.get("/", protect, checkLicense, async (req, res) => {
   const filter =
     req.user.role === "admin"
       ? { company: req.user.company }
@@ -18,7 +19,7 @@ router.get("/", protect, async (req, res) => {
   res.json(tasks);
 });
 
-router.post("/", protect, adminOnly, async (req, res) => {
+router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   try {
     const { title, description, assignedTo, priority, dueDate } = req.body;
     if (!title || !assignedTo) return res.status(400).json({ message: "Title and assignee are required" });
@@ -49,7 +50,7 @@ router.post("/", protect, adminOnly, async (req, res) => {
   }
 });
 
-router.patch("/:id/status", protect, async (req, res) => {
+router.patch("/:id/status", protect, checkLicense, async (req, res) => {
   try {
     const { status } = req.body;
     const task = await Task.findOne({ _id: req.params.id, company: req.user.company }).populate(
@@ -76,7 +77,7 @@ router.patch("/:id/status", protect, async (req, res) => {
   }
 });
 
-router.put("/:id", protect, adminOnly, async (req, res) => {
+router.put("/:id", protect, checkLicense, adminOnly, async (req, res) => {
   try {
     const { title, description, assignedTo, priority, dueDate, status } = req.body;
     const task = await Task.findOne({ _id: req.params.id, company: req.user.company });
@@ -109,12 +110,12 @@ router.put("/:id", protect, adminOnly, async (req, res) => {
   }
 });
 
-router.delete("/:id", protect, adminOnly, async (req, res) => {
+router.delete("/:id", protect, checkLicense, adminOnly, async (req, res) => {
   await Task.findOneAndDelete({ _id: req.params.id, company: req.user.company });
   res.json({ message: "Task removed" });
 });
 
-router.get("/analytics/summary", protect, adminOnly, async (req, res) => {
+router.get("/analytics/summary", protect, checkLicense, adminOnly, async (req, res) => {
   const companyId = req.user.company;
 
   const [byStatus, byPriority, byUser, total] = await Promise.all([

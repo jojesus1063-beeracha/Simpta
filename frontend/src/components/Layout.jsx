@@ -51,6 +51,16 @@ const Layout = ({ title, children }) => {
                 Team
               </NavLink>
             )}
+            {user?.isSuperAdmin && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `${navItem} ${isActive ? "bg-slate-850 text-white" : "hover:bg-slate-850/60 hover:text-white"}`
+                }
+              >
+                Platform Admin
+              </NavLink>
+            )}
           </nav>
         </div>
         <div className="border-t border-slate-700 pt-4">
