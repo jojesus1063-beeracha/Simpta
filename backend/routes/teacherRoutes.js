@@ -58,10 +58,20 @@ router.get("/me", protect, checkLicense, async (req, res) => {
   res.json(teacher);
 });
 
+// @route  PATCH /api/teachers/me
+// @desc   Teacher updates their own photo
+router.patch("/me", protect, checkLicense, async (req, res) => {
+  const teacher = await Teacher.findOne({ userAccount: req.user._id, company: req.user.company });
+  if (!teacher) return res.status(404).json({ message: "No teacher profile linked to this account" });
+  if (req.body.photoUrl !== undefined) teacher.photoUrl = req.body.photoUrl;
+  await teacher.save();
+  res.json(teacher);
+});
+
 // @route  POST /api/teachers
 router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   try {
-    const { name, email, phone, employeeId, department, subjects, qualification, joiningDate, issueLogin } = req.body;
+    const { name, email, phone, employeeId, department, subjects, qualification, joiningDate, photoUrl, issueLogin } = req.body;
     if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
 
     const teacher = await Teacher.create({
@@ -74,6 +84,7 @@ router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
       subjects: subjects || [],
       qualification,
       joiningDate,
+      photoUrl,
     });
 
     if (issueLogin) await issueLoginFor(teacher, req);
@@ -82,6 +93,16 @@ router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Failed to create teacher", error: err.message });
   }
+});
+
+// @route  PUT /api/teachers/me
+// @desc   The logged-in teacher updates their own photo
+router.put("/me", protect, checkLicense, async (req, res) => {
+  const teacher = await Teacher.findOne({ userAccount: req.user._id, company: req.user.company });
+  if (!teacher) return res.status(404).json({ message: "No teacher profile linked to this account" });
+  if (req.body.photoUrl !== undefined) teacher.photoUrl = req.body.photoUrl;
+  await teacher.save();
+  res.json(teacher);
 });
 
 // @route  PUT /api/teachers/:id

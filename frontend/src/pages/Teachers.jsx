@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import api from "../api/axios";
+import PhotoUpload from "../components/PhotoUpload";
 
-const emptyForm = { name: "", email: "", phone: "", employeeId: "", department: "", subjects: "", qualification: "" };
+const emptyForm = { name: "", email: "", phone: "", employeeId: "", department: "", subjects: "", qualification: "", photoUrl: "" };
 
 const Teachers = () => {
   const [teachers, setTeachers] = useState([]);
@@ -52,6 +53,11 @@ const Teachers = () => {
     load();
   };
 
+  const handlePhoto = async (id, url) => {
+    await api.put(`/teachers/${id}`, { photoUrl: url });
+    load();
+  };
+
   return (
     <Layout title="Teachers">
       <div className="mb-5 flex justify-end">
@@ -66,6 +72,10 @@ const Teachers = () => {
       {showForm && (
         <form onSubmit={handleCreate} className="mb-6 grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-6 md:grid-cols-2">
           {error && <p className="md:col-span-2 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-slate-700">Photo</label>
+            <PhotoUpload photoUrl={form.photoUrl} onUploaded={(url) => setForm({ ...form, photoUrl: url })} />
+          </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Full name</label>
             <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
@@ -108,6 +118,7 @@ const Teachers = () => {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
+              <th className="px-4 py-3"></th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Department</th>
@@ -118,6 +129,9 @@ const Teachers = () => {
           <tbody className="divide-y divide-slate-100">
             {teachers.map((t) => (
               <tr key={t._id}>
+                <td className="px-4 py-3">
+                  <PhotoUpload photoUrl={t.photoUrl} onUploaded={(url) => handlePhoto(t._id, url)} size={36} />
+                </td>
                 <td className="px-4 py-3 font-medium text-slate-800">{t.name}</td>
                 <td className="px-4 py-3 text-slate-500">{t.email}</td>
                 <td className="px-4 py-3 text-slate-500">{t.department || "—"}</td>
@@ -139,7 +153,7 @@ const Teachers = () => {
             ))}
             {teachers.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">No teachers yet.</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">No teachers yet.</td>
               </tr>
             )}
           </tbody>

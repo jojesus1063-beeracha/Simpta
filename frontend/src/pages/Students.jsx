@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import api from "../api/axios";
+import PhotoUpload from "../components/PhotoUpload";
 
-const emptyForm = { name: "", admissionNumber: "", rollNumber: "", class: "", parentName: "", parentPhone: "", parentEmail: "" };
+const emptyForm = { name: "", admissionNumber: "", rollNumber: "", class: "", parentName: "", parentPhone: "", parentEmail: "", photoUrl: "" };
 
 const Students = () => {
   const [students, setStudents] = useState([]);
@@ -50,6 +51,11 @@ const Students = () => {
     load();
   };
 
+  const handlePhoto = async (id, url) => {
+    await api.put(`/students/${id}`, { photoUrl: url });
+    load();
+  };
+
   return (
     <Layout title="Students">
       <div className="mb-5 flex justify-end">
@@ -64,6 +70,10 @@ const Students = () => {
       {showForm && (
         <form onSubmit={handleCreate} className="mb-6 grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-6 md:grid-cols-2">
           {error && <p className="md:col-span-2 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-slate-700">Photo</label>
+            <PhotoUpload photoUrl={form.photoUrl} onUploaded={(url) => setForm({ ...form, photoUrl: url })} />
+          </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Full name</label>
             <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
@@ -111,6 +121,7 @@ const Students = () => {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
+              <th className="px-4 py-3">Photo</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Class</th>
               <th className="px-4 py-3">Roll no.</th>
@@ -121,6 +132,9 @@ const Students = () => {
           <tbody className="divide-y divide-slate-100">
             {students.map((s) => (
               <tr key={s._id}>
+                <td className="px-4 py-3">
+                  <PhotoUpload photoUrl={s.photoUrl} onUploaded={(url) => handlePhoto(s._id, url)} size={36} />
+                </td>
                 <td className="px-4 py-3 font-medium text-slate-800">{s.name}</td>
                 <td className="px-4 py-3 text-slate-500">{s.class ? `${s.class.name}${s.class.section ? " - " + s.class.section : ""}` : "—"}</td>
                 <td className="px-4 py-3 text-slate-500">{s.rollNumber || "—"}</td>
@@ -140,7 +154,7 @@ const Students = () => {
             ))}
             {students.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">No students yet.</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">No students yet.</td>
               </tr>
             )}
           </tbody>

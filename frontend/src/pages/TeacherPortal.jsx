@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import api from "../api/axios";
+import PhotoUpload from "../components/PhotoUpload";
 
 const TeacherPortal = () => {
   const [profile, setProfile] = useState(null);
@@ -11,11 +12,19 @@ const TeacherPortal = () => {
     api.get("/classes").then((res) => setClasses(res.data));
   }, []);
 
+  const handlePhoto = async (url) => {
+    const res = await api.put("/teachers/me", { photoUrl: url });
+    setProfile(res.data);
+  };
+
   return (
     <Layout title="My profile">
       {profile && (
         <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6">
-          <h2 className="mb-4 font-display text-base font-bold text-slate-900">{profile.name}</h2>
+          <div className="mb-4 flex items-center gap-4">
+            <PhotoUpload photoUrl={profile.photoUrl} onUploaded={handlePhoto} size={64} />
+            <h2 className="font-display text-base font-bold text-slate-900">{profile.name}</h2>
+          </div>
           <dl className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <dt className="text-slate-400">Email</dt>
