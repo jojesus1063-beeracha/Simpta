@@ -8,6 +8,7 @@ import Tasks from "./pages/Tasks";
 import Team from "./pages/Team";
 import SuperAdmin from "./pages/SuperAdmin";
 import SchoolDashboard from "./pages/SchoolDashboard";
+import Feed from "./pages/Feed";
 import Teachers from "./pages/Teachers";
 import Students from "./pages/Students";
 import Classes from "./pages/Classes";
@@ -31,6 +32,7 @@ function App() {
       <Route path="/register" element={<Register />} />
 
       {/* Task Manager product */}
+      <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute adminOnly><Dashboard /></ProtectedRoute>} />
       <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
       <Route path="/team" element={<ProtectedRoute adminOnly><Team /></ProtectedRoute>} />

@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Logo from "./Logo";
+import NotificationBell from "./NotificationBell";
 
 const navItem =
   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors";
@@ -26,6 +27,10 @@ const Layout = ({ title, children }) => {
             <Logo compact />
           </div>
           <nav className="space-y-1">
+            {!user?.isSuperAdmin && (
+              <NavLink to="/feed" className={linkClass}>Feed</NavLink>
+            )}
+
             {!isSchool && user?.role === "admin" && (
               <NavLink to="/dashboard" className={linkClass}>Overview</NavLink>
             )}
@@ -75,8 +80,9 @@ const Layout = ({ title, children }) => {
       </aside>
 
       <main className="flex-1 overflow-y-auto">
-        <header className="border-b border-slate-200 bg-white px-8 py-5">
+        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
           <h1 className="font-display text-xl font-bold text-slate-900">{title}</h1>
+          {!user?.isSuperAdmin && <NotificationBell />}
         </header>
         <div className="p-8">{children}</div>
       </main>

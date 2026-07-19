@@ -4,9 +4,12 @@ const User = require("../models/User");
 const { protect, adminOnly } = require("../middleware/auth");
 const { checkLicense } = require("../middleware/license");
 const { sendEmail, taskAssignedEmail, taskStatusUpdatedEmail } = require("../utils/sendEmail");
+const { notifyUser } = require("../utils/notify");
 
 const router = express.Router();
 
+// @route  GET /api/tasks
+// @desc   Admin sees every task in their company; members see only their own
 router.get("/", protect, checkLicense, async (req, res) => {
   const filter =
     req.user.role === "admin"
@@ -19,6 +22,8 @@ router.get("/", protect, checkLicense, async (req, res) => {
   res.json(tasks);
 });
 
+// @route  POST /api/tasks
+// @desc   Admin creates a task and assigns it to someone in their own company
 router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   try {
     const { title, description, assignedTo, priority, dueDate } = req.body;
@@ -43,6 +48,13 @@ router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
     ]);
 
     await sendEmail(taskAssignedEmail(populated, assignee));
+    await notifyUser({
+      companyId: req.user.company,
+      userId: assignee._id,
+      type: "task",
+      message: `New task assigned: "${title}"`,
+      link: "/tasks",
+    });
 
     res.status(201).json(populated);
   } catch (err) {
@@ -50,6 +62,8 @@ router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   }
 });
 
+// @route  PATCH /api/tasks/:id/status
+// @desc   Member (or admin) updates a task's status; the admin who assigned it gets notified
 router.patch("/:id/status", protect, checkLicense, async (req, res) => {
   try {
     const { status } = req.body;
@@ -77,6 +91,8 @@ router.patch("/:id/status", protect, checkLicense, async (req, res) => {
   }
 });
 
+// @route  PUT /api/tasks/:id
+// @desc   Admin edits task details (reassign, change priority/due date/etc.)
 router.put("/:id", protect, checkLicense, adminOnly, async (req, res) => {
   try {
     const { title, description, assignedTo, priority, dueDate, status } = req.body;
@@ -110,11 +126,14 @@ router.put("/:id", protect, checkLicense, adminOnly, async (req, res) => {
   }
 });
 
+// @route  DELETE /api/tasks/:id
 router.delete("/:id", protect, checkLicense, adminOnly, async (req, res) => {
   await Task.findOneAndDelete({ _id: req.params.id, company: req.user.company });
   res.json({ message: "Task removed" });
 });
 
+// @route  GET /api/tasks/analytics/summary
+// @desc   Admin-only aggregated stats for the dashboard, scoped to their own company
 router.get("/analytics/summary", protect, checkLicense, adminOnly, async (req, res) => {
   const companyId = req.user.company;
 

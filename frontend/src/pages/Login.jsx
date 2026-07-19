@@ -1,12 +1,19 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/Logo";
 import { getHomePath } from "../utils/getHomePath";
 
+const reasonMessages = {
+  session_invalidated: "You've been signed out because this account logged in from another device.",
+  inactivity: "You've been signed out after 10 minutes of inactivity.",
+};
+
 const Login = () => {
   const { login, user, companyStatus } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reasonMessage = reasonMessages[searchParams.get("reason")];
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,6 +55,9 @@ const Login = () => {
           <h1 className="mb-1 font-display text-2xl font-bold text-slate-900">Welcome back</h1>
           <p className="mb-6 text-sm text-slate-500">Log in to your account.</p>
 
+          {reasonMessage && (
+            <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-700">{reasonMessage}</p>
+          )}
           {error && <p className="mb-4 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
 
           <form onSubmit={handleSubmit} className="space-y-4">

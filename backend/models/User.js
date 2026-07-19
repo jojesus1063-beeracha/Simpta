@@ -9,6 +9,8 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ["admin", "member", "teacher", "student"], default: "member" },
     company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
     isSuperAdmin: { type: Boolean, default: false },
+    webSessionId: { type: String, default: null },
+    appSessionId: { type: String, default: null },
   },
   { timestamps: true }
 );

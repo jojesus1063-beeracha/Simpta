@@ -15,6 +15,9 @@ const studentRoutes = require("./routes/studentRoutes");
 const classRoutes = require("./routes/classRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const schoolRoutes = require("./routes/schoolRoutes");
+const feedRoutes = require("./routes/feedRoutes");
+const photoRoutes = require("./routes/photoRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
 
@@ -30,6 +33,9 @@ app.use("/api/students", studentRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/school", schoolRoutes);
+app.use("/api/feed", feedRoutes);
+app.use("/api/photobox", photoRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 

@@ -1,13 +1,32 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const User = require("../models/User");
 const Company = require("../models/Company");
 const { protect } = require("../middleware/auth");
 
 const router = express.Router();
 
-const signToken = (user) =>
-  jwt.sign({ id: user._id, role: user.role, company: user.company }, process.env.JWT_SECRET, { expiresIn: "7d" });
+// Starts a fresh session for this user on the given platform, invalidating
+// any previous session on that same platform (web logins don't affect app
+// sessions and vice versa).
+const startSession = async (user, platform) => {
+  const sessionId = crypto.randomBytes(16).toString("hex");
+  if (platform === "app") {
+    user.appSessionId = sessionId;
+  } else {
+    user.webSessionId = sessionId;
+  }
+  await user.save();
+  return sessionId;
+};
+
+const signToken = (user, sessionId, platform) =>
+  jwt.sign(
+    { id: user._id, role: user.role, company: user.company, sessionId, platform },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
 const getCompanyStatus = async (companyId) => {
   const company = await Company.findById(companyId);
@@ -27,7 +46,7 @@ const getCompanyStatus = async (companyId) => {
 //         /api/users (see userRoutes.js), joining that same company.
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, companyName, productType } = req.body;
+    const { name, email, password, companyName, productType, platform } = req.body;
     if (!name || !email || !password || !companyName) {
       return res.status(400).json({ message: "Name, email, password and company name are all required" });
     }
@@ -38,9 +57,12 @@ router.post("/register", async (req, res) => {
     const company = await Company.create({ name: companyName, productType: productType === "school" ? "school" : "tasks" });
     const user = await User.create({ name, email, password, role: "admin", company: company._id });
 
+    const platformKey = platform === "app" ? "app" : "web";
+    const sessionId = await startSession(user, platformKey);
+
     res.status(201).json({
       user: user.toSafeObject(),
-      token: signToken(user),
+      token: signToken(user, sessionId, platformKey),
       companyStatus: await getCompanyStatus(company._id),
     });
   } catch (err) {
@@ -49,18 +71,24 @@ router.post("/register", async (req, res) => {
 });
 
 // @route  POST /api/auth/login
+// @desc   Logging in on a platform (web/app) invalidates any other session
+//         on that same platform for this account. Web and app sessions are
+//         independent of each other.
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, platform } = req.body;
     const user = await User.findOne({ email: (email || "").toLowerCase() });
     if (!user) return res.status(401).json({ message: "Invalid email or password" });
 
     const match = await user.comparePassword(password);
     if (!match) return res.status(401).json({ message: "Invalid email or password" });
 
+    const platformKey = platform === "app" ? "app" : "web";
+    const sessionId = await startSession(user, platformKey);
+
     res.json({
       user: user.toSafeObject(),
-      token: signToken(user),
+      token: signToken(user, sessionId, platformKey),
       companyStatus: user.isSuperAdmin ? null : await getCompanyStatus(user.company),
     });
   } catch (err) {
