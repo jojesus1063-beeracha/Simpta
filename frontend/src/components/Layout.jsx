@@ -5,10 +5,13 @@ import Logo from "./Logo";
 
 const navItem =
   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors";
+const linkClass = ({ isActive }) =>
+  `${navItem} ${isActive ? "bg-slate-850 text-white" : "hover:bg-slate-850/60 hover:text-white"}`;
 
 const Layout = ({ title, children }) => {
-  const { user, logout } = useAuth();
+  const { user, companyStatus, logout } = useAuth();
   const navigate = useNavigate();
+  const isSchool = companyStatus?.productType === "school";
 
   const handleLogout = () => {
     logout();
@@ -23,43 +26,39 @@ const Layout = ({ title, children }) => {
             <Logo compact />
           </div>
           <nav className="space-y-1">
-            {user?.role === "admin" && (
-              <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                  `${navItem} ${isActive ? "bg-slate-850 text-white" : "hover:bg-slate-850/60 hover:text-white"}`
-                }
-              >
-                Overview
+            {!isSchool && user?.role === "admin" && (
+              <NavLink to="/dashboard" className={linkClass}>Overview</NavLink>
+            )}
+            {!isSchool && (
+              <NavLink to="/tasks" className={linkClass}>
+                {user?.role === "admin" ? "All tasks" : "My tasks"}
               </NavLink>
             )}
-            <NavLink
-              to="/tasks"
-              className={({ isActive }) =>
-                `${navItem} ${isActive ? "bg-slate-850 text-white" : "hover:bg-slate-850/60 hover:text-white"}`
-              }
-            >
-              {user?.role === "admin" ? "All tasks" : "My tasks"}
-            </NavLink>
-            {user?.role === "admin" && (
-              <NavLink
-                to="/team"
-                className={({ isActive }) =>
-                  `${navItem} ${isActive ? "bg-slate-850 text-white" : "hover:bg-slate-850/60 hover:text-white"}`
-                }
-              >
-                Team
-              </NavLink>
+            {!isSchool && user?.role === "admin" && (
+              <NavLink to="/team" className={linkClass}>Team</NavLink>
             )}
+
+            {isSchool && user?.role === "admin" && (
+              <>
+                <NavLink to="/school" className={linkClass}>Overview</NavLink>
+                <NavLink to="/teachers" className={linkClass}>Teachers</NavLink>
+                <NavLink to="/students" className={linkClass}>Students</NavLink>
+                <NavLink to="/classes" className={linkClass}>Classes</NavLink>
+                <NavLink to="/attendance" className={linkClass}>Attendance</NavLink>
+              </>
+            )}
+            {isSchool && user?.role === "teacher" && (
+              <>
+                <NavLink to="/teacher-portal" className={linkClass}>My profile</NavLink>
+                <NavLink to="/attendance" className={linkClass}>Attendance</NavLink>
+              </>
+            )}
+            {isSchool && user?.role === "student" && (
+              <NavLink to="/student-portal" className={linkClass}>My profile</NavLink>
+            )}
+
             {user?.isSuperAdmin && (
-              <NavLink
-                to="/admin"
-                className={({ isActive }) =>
-                  `${navItem} ${isActive ? "bg-slate-850 text-white" : "hover:bg-slate-850/60 hover:text-white"}`
-                }
-              >
-                Platform Admin
-              </NavLink>
+              <NavLink to="/admin" className={linkClass}>Platform Admin</NavLink>
             )}
           </nav>
         </div>

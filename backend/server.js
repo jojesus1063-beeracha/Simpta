@@ -10,6 +10,11 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const superAdminRoutes = require("./routes/superAdminRoutes");
+const teacherRoutes = require("./routes/teacherRoutes");
+const studentRoutes = require("./routes/studentRoutes");
+const classRoutes = require("./routes/classRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
+const schoolRoutes = require("./routes/schoolRoutes");
 
 const app = express();
 
@@ -20,11 +25,19 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/superadmin", superAdminRoutes);
+app.use("/api/teachers", teacherRoutes);
+app.use("/api/students", studentRoutes);
+app.use("/api/classes", classRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/school", schoolRoutes);
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 const PORT = process.env.PORT || 5000;
 
+// One-time migration: any users/tasks created before multi-tenancy was added
+// won't have a company set. Give them all a single shared "legacy" company
+// so nothing breaks. Safe to run every boot - it only acts if needed.
 const migrateLegacyData = async () => {
   const orphanedUsers = await User.find({ company: { $exists: false } });
   if (orphanedUsers.length === 0) return;
@@ -36,6 +49,8 @@ const migrateLegacyData = async () => {
   console.log("Migration complete.");
 };
 
+// Grants super-admin (platform owner) access to whichever account matches
+// SUPER_ADMIN_EMAIL. Safe to run every boot - only acts if not already set.
 const grantSuperAdmin = async () => {
   const email = process.env.SUPER_ADMIN_EMAIL;
   if (!email) return;

@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/Logo";
+import { getHomePath } from "../utils/getHomePath";
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, user, companyStatus } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -15,8 +16,8 @@ const Login = () => {
     setError("");
     setLoading(true);
     try {
-      await login(form.email, form.password);
-      navigate("/tasks");
+      const result = await login(form.email, form.password);
+      navigate(getHomePath(result.user, result.companyStatus));
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong. Try again.");
     } finally {

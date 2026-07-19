@@ -29,13 +29,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", res.data.token);
     setUser(res.data.user);
     setCompanyStatus(res.data.companyStatus);
+    return { user: res.data.user, companyStatus: res.data.companyStatus };
   };
 
-  const register = async (name, email, password, companyName) => {
-    const res = await api.post("/auth/register", { name, email, password, companyName });
+  const register = async (name, email, password, companyName, productType) => {
+    const res = await api.post("/auth/register", { name, email, password, companyName, productType });
     localStorage.setItem("token", res.data.token);
     setUser(res.data.user);
     setCompanyStatus(res.data.companyStatus);
+    return { user: res.data.user, companyStatus: res.data.companyStatus };
   };
 
   const logout = () => {

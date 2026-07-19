@@ -6,7 +6,13 @@ import Logo from "../components/Logo";
 const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ companyName: "", name: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    companyName: "",
+    name: "",
+    email: "",
+    password: "",
+    productType: "tasks",
+  });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -15,8 +21,8 @@ const Register = () => {
     setError("");
     setLoading(true);
     try {
-      await register(form.name, form.email, form.password, form.companyName);
-      navigate("/tasks");
+      await register(form.name, form.email, form.password, form.companyName, form.productType);
+      navigate(form.productType === "school" ? "/school" : "/tasks");
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong. Try again.");
     } finally {
@@ -30,13 +36,13 @@ const Register = () => {
         <Logo size="lg" />
         <div>
           <p className="mb-2 font-display text-2xl font-bold leading-snug">
-            Set up your team's workspace in under a minute.
+            Set up your workspace in under a minute.
           </p>
           <p className="text-sm text-teal-100/70">
-            Your own private space to assign tasks and track your team's progress.
+            One platform, built for how your team or school actually works.
           </p>
         </div>
-        <p className="text-xs text-teal-100/40">Simpta Task Manager {new Date().getFullYear()}</p>
+        <p className="text-xs text-teal-100/40">Simpta {new Date().getFullYear()}</p>
       </div>
 
       <div className="flex flex-1 items-center justify-center bg-white px-8 py-10">
@@ -53,10 +59,39 @@ const Register = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Company name</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">What are you setting up?</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, productType: "tasks" })}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+                    form.productType === "tasks"
+                      ? "border-teal-500 bg-teal-50 text-teal-700"
+                      : "border-slate-300 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  Task Manager
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, productType: "school" })}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+                    form.productType === "school"
+                      ? "border-teal-500 bg-teal-50 text-teal-700"
+                      : "border-slate-300 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  School Management
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                {form.productType === "school" ? "School name" : "Company name"}
+              </label>
               <input
                 required
-                placeholder="Acme Inc."
+                placeholder={form.productType === "school" ? "Greenwood High School" : "Acme Inc."}
                 value={form.companyName}
                 onChange={(e) => setForm({ ...form, companyName: e.target.value })}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
@@ -95,7 +130,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-teal-600 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
+              className="w-full rounded-lg bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
             >
               {loading ? "Creating workspace…" : "Create workspace"}
             </button>
