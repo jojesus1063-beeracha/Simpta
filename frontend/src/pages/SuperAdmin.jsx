@@ -34,6 +34,10 @@ const SuperAdmin = () => {
     updateCompany(id, { plan: value });
   };
 
+  const handleProductChange = (id, value) => {
+    updateCompany(id, { productType: value });
+  };
+
   if (loading) {
     return (
       <Layout title="Platform Admin">
@@ -52,6 +56,7 @@ const SuperAdmin = () => {
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-4 py-3">Company</th>
+              <th className="px-4 py-3">Product</th>
               <th className="px-4 py-3">Admin contact</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Trial ends</th>
@@ -63,6 +68,16 @@ const SuperAdmin = () => {
             {companies.map((c) => (
               <tr key={c.id}>
                 <td className="px-4 py-3 font-medium text-slate-800">{c.name}</td>
+                <td className="px-4 py-3">
+                  <select
+                    value={c.productType}
+                    onChange={(e) => handleProductChange(c.id, e.target.value)}
+                    className="rounded-lg border border-slate-200 px-2 py-1 text-xs"
+                  >
+                    <option value="tasks">Task Manager</option>
+                    <option value="school">School Management</option>
+                  </select>
+                </td>
                 <td className="px-4 py-3 text-slate-500">
                   {c.admin ? (
                     <>
@@ -111,7 +126,7 @@ const SuperAdmin = () => {
             ))}
             {companies.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                   No companies have signed up yet.
                 </td>
               </tr>
