@@ -9,6 +9,13 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ["admin", "member", "teacher", "student"], default: "member" },
     company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
     isSuperAdmin: { type: Boolean, default: false },
+    permissions: {
+      createTasks: { type: Boolean, default: false },
+      editAnyTask: { type: Boolean, default: false },
+      manageTeam: { type: Boolean, default: false },
+      manageFeed: { type: Boolean, default: false },
+      managePhotoBox: { type: Boolean, default: false },
+    },
     webSessionId: { type: String, default: null },
     appSessionId: { type: String, default: null },
   },
@@ -34,6 +41,7 @@ userSchema.methods.toSafeObject = function () {
     role: this.role,
     company: this.company,
     isSuperAdmin: this.isSuperAdmin,
+    permissions: this.permissions,
     createdAt: this.createdAt,
   };
 };

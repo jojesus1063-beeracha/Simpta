@@ -3,15 +3,24 @@ const crypto = require("crypto");
 const User = require("../models/User");
 const { protect, adminOnly } = require("../middleware/auth");
 const { checkLicense } = require("../middleware/license");
+const { canCreateTasks } = require("../utils/permissions");
 const { sendEmail } = require("../utils/sendEmail");
 
 const router = express.Router();
 
-router.get("/", protect, checkLicense, adminOnly, async (req, res) => {
+// @route  GET /api/users
+// @desc   List users in the company. Admins get this for team management;
+//         anyone who can create tasks gets it to populate assign/owner dropdowns.
+router.get("/", protect, checkLicense, async (req, res) => {
+  if (req.user.role !== "admin" && !canCreateTasks(req.user)) {
+    return res.status(403).json({ message: "Admin access required" });
+  }
   const users = await User.find({ company: req.user.company }).select("-password").sort({ createdAt: -1 });
   res.json(users);
 });
 
+// @route  POST /api/users
+// @desc   Admin creates a new user account in their own company and emails them a temporary password
 router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   try {
     const { name, email, role } = req.body;
@@ -52,6 +61,21 @@ router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   }
 });
 
+// @route  PATCH /api/users/:id/permissions
+// @desc   Admin toggles granular access permissions for a teammate
+router.patch("/:id/permissions", protect, checkLicense, adminOnly, async (req, res) => {
+  const user = await User.findOne({ _id: req.params.id, company: req.user.company });
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  const allowedKeys = ["createTasks", "editAnyTask", "manageTeam", "manageFeed", "managePhotoBox"];
+  allowedKeys.forEach((key) => {
+    if (req.body[key] !== undefined) user.permissions[key] = !!req.body[key];
+  });
+  await user.save();
+  res.json(user.toSafeObject());
+});
+
+// @route  DELETE /api/users/:id
 router.delete("/:id", protect, checkLicense, adminOnly, async (req, res) => {
   if (req.params.id === String(req.user._id)) {
     return res.status(400).json({ message: "You cannot delete your own account" });

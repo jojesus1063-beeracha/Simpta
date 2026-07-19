@@ -18,6 +18,7 @@ const taskSchema = new mongoose.Schema(
     },
     dueDate: { type: Date },
     company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   },
   { timestamps: true }
 );

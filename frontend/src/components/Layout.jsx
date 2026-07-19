@@ -42,6 +42,9 @@ const Layout = ({ title, children }) => {
             {!isSchool && user?.role === "admin" && (
               <NavLink to="/team" className={linkClass}>Team</NavLink>
             )}
+            {user?.role === "admin" && (
+              <NavLink to="/permissions" className={linkClass}>Permissions</NavLink>
+            )}
 
             {isSchool && user?.role === "admin" && (
               <>

@@ -4,15 +4,17 @@ import api from "../api/axios";
 import { StatusBadge, PriorityBadge } from "../components/Badges";
 import { useAuth } from "../context/AuthContext";
 
-const emptyForm = { title: "", description: "", assignedTo: "", priority: "medium", dueDate: "" };
+const emptyForm = { title: "", description: "", assignedTo: "", owner: "", priority: "medium", dueDate: "" };
 
 const Tasks = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const canCreate = isAdmin || user?.role === "teacher" || user?.permissions?.createTasks;
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
@@ -24,23 +26,49 @@ const Tasks = () => {
 
   useEffect(() => {
     loadTasks();
-    if (isAdmin) api.get("/users").then((res) => setUsers(res.data));
-  }, [isAdmin]);
+    if (canCreate) api.get("/users").then((res) => setUsers(res.data)).catch(() => {});
+  }, [canCreate]);
 
-  const handleCreate = async (e) => {
+  const canEdit = (t) =>
+    isAdmin || user?.permissions?.editAnyTask || (t.owner && t.owner._id === user?.id);
+
+  const resetForm = () => {
+    setForm(emptyForm);
+    setShowForm(false);
+    setEditingId(null);
+    setError("");
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError("");
     try {
-      await api.post("/tasks", form);
-      setForm(emptyForm);
-      setShowForm(false);
+      if (editingId) {
+        await api.put(`/tasks/${editingId}`, form);
+      } else {
+        await api.post("/tasks", form);
+      }
+      resetForm();
       loadTasks();
     } catch (err) {
-      setError(err.response?.data?.message || "Could not create task.");
+      setError(err.response?.data?.message || "Could not save task.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const startEdit = (t) => {
+    setForm({
+      title: t.title,
+      description: t.description || "",
+      assignedTo: t.assignedTo?._id || "",
+      owner: t.owner?._id || "",
+      priority: t.priority,
+      dueDate: t.dueDate ? t.dueDate.slice(0, 10) : "",
+    });
+    setEditingId(t._id);
+    setShowForm(true);
   };
 
   const handleStatusChange = async (id, status) => {
@@ -57,7 +85,7 @@ const Tasks = () => {
   const filteredTasks = tasks.filter((t) => filter === "all" || t.status === filter);
 
   return (
-    <Layout title={isAdmin ? "All tasks" : "My tasks"}>
+    <Layout title={canCreate ? "All tasks" : "My tasks"}>
       <div className="mb-5 flex items-center justify-between">
         <div className="flex gap-2">
           {["all", "pending", "in-progress", "completed"].map((f) => (
@@ -72,9 +100,9 @@ const Tasks = () => {
             </button>
           ))}
         </div>
-        {isAdmin && (
+        {canCreate && (
           <button
-            onClick={() => setShowForm((s) => !s)}
+            onClick={() => (showForm ? resetForm() : setShowForm(true))}
             className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
           >
             {showForm ? "Cancel" : "+ New task"}
@@ -83,7 +111,7 @@ const Tasks = () => {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="mb-6 grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-6 md:grid-cols-2">
+        <form onSubmit={handleSubmit} className="mb-6 grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-6 md:grid-cols-2">
           {error && <p className="md:col-span-2 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Title</label>
@@ -140,12 +168,30 @@ const Tasks = () => {
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
             />
           </div>
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-slate-700">Task owner</label>
+            <select
+              value={form.owner}
+              onChange={(e) => setForm({ ...form, owner: e.target.value })}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            >
+              <option value="">Me (default)</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-slate-400">
+              The owner (along with admins) can edit this task later — separate from who it's assigned to.
+            </p>
+          </div>
           <button
             type="submit"
             disabled={submitting}
             className="md:col-span-2 rounded-lg bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
           >
-            {submitting ? "Assigning…" : "Create & assign task"}
+            {submitting ? "Saving…" : editingId ? "Save changes" : "Create & assign task"}
           </button>
         </form>
       )}
@@ -155,11 +201,12 @@ const Tasks = () => {
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-4 py-3">Task</th>
-              {isAdmin && <th className="px-4 py-3">Assigned to</th>}
+              {canCreate && <th className="px-4 py-3">Assigned to</th>}
+              {canCreate && <th className="px-4 py-3">Owner</th>}
               <th className="px-4 py-3">Priority</th>
               <th className="px-4 py-3">Due</th>
               <th className="px-4 py-3">Status</th>
-              {isAdmin && <th className="px-4 py-3"></th>}
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -169,7 +216,8 @@ const Tasks = () => {
                   <p className="font-medium text-slate-800">{t.title}</p>
                   {t.description && <p className="mt-0.5 line-clamp-1 text-xs text-slate-400">{t.description}</p>}
                 </td>
-                {isAdmin && <td className="px-4 py-3 text-slate-500">{t.assignedTo?.name}</td>}
+                {canCreate && <td className="px-4 py-3 text-slate-500">{t.assignedTo?.name}</td>}
+                {canCreate && <td className="px-4 py-3 text-slate-500">{t.owner?.name || "—"}</td>}
                 <td className="px-4 py-3">
                   <PriorityBadge priority={t.priority} />
                 </td>
@@ -187,18 +235,25 @@ const Tasks = () => {
                     <option value="completed">Completed</option>
                   </select>
                 </td>
-                {isAdmin && (
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => handleDelete(t._id)} className="text-xs font-medium text-rose-500 hover:underline">
-                      Delete
-                    </button>
-                  </td>
-                )}
+                <td className="px-4 py-3 text-right">
+                  <div className="flex justify-end gap-3">
+                    {canEdit(t) && (
+                      <button onClick={() => startEdit(t)} className="text-xs font-medium text-teal-600 hover:underline">
+                        Edit
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button onClick={() => handleDelete(t._id)} className="text-xs font-medium text-rose-500 hover:underline">
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))}
             {filteredTasks.length === 0 && (
               <tr>
-                <td colSpan={isAdmin ? 6 : 4} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={canCreate ? 7 : 4} className="px-4 py-8 text-center text-slate-400">
                   No tasks here yet.
                 </td>
               </tr>
