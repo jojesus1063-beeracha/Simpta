@@ -73,6 +73,16 @@ const Layout = ({ title, children }) => {
         <div className="border-t border-slate-700 pt-4">
           <p className="px-2 text-xs text-slate-400">Signed in as</p>
           <p className="px-2 text-sm font-medium text-white">{user?.name}</p>
+          {user?.userId && <p className="px-2 text-xs text-slate-500">{user.userId}</p>}
+          {user?.role === "admin" && companyStatus?.workspaceId && (
+            <div className="mt-3 space-y-0.5 border-t border-slate-800 px-2 pt-3 text-xs text-slate-500">
+              <p>Workspace: {companyStatus.workspaceId}</p>
+              {user?.organisationId && <p>Org: {user.organisationId}</p>}
+              <p className="capitalize">
+                Plan: {companyStatus.licenseTier === "unlimited" ? "Unlimited" : companyStatus.licenseTier === "trial" ? "Trial" : `${companyStatus.licenseTier} users`}
+              </p>
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="mt-3 w-full rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-850/60 hover:text-white"

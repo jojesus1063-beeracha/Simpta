@@ -93,6 +93,7 @@ const Team = () => {
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">User ID</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Role</th>
                   <th className="px-4 py-3"></th>
@@ -102,6 +103,7 @@ const Team = () => {
                 {users.map((u) => (
                   <tr key={u._id}>
                     <td className="px-4 py-3 font-medium text-slate-800">{u.name}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-400">{u.userId || "—"}</td>
                     <td className="px-4 py-3 text-slate-500">{u.email}</td>
                     <td className="px-4 py-3 capitalize text-slate-500">{u.role}</td>
                     <td className="px-4 py-3 text-right">
@@ -116,7 +118,7 @@ const Team = () => {
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                    <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
                       No teammates yet.
                     </td>
                   </tr>

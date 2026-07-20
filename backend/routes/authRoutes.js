@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const User = require("../models/User");
 const Company = require("../models/Company");
 const { protect } = require("../middleware/auth");
+const { generateId } = require("../utils/generateId");
 
 const router = express.Router();
 
@@ -35,6 +36,9 @@ const getCompanyStatus = async (companyId) => {
     name: company.name,
     productType: company.productType,
     licenseStatus: company.licenseStatus,
+    licenseTier: company.licenseTier,
+    maxUsers: company.maxUsers,
+    workspaceId: company.workspaceId,
     plan: company.plan,
     trialEndsAt: company.trialEndsAt,
   };
@@ -54,8 +58,20 @@ router.post("/register", async (req, res) => {
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) return res.status(409).json({ message: "An account with that email already exists" });
 
-    const company = await Company.create({ name: companyName, productType: productType === "school" ? "school" : "tasks" });
-    const user = await User.create({ name, email, password, role: "admin", company: company._id });
+    const company = await Company.create({
+      name: companyName,
+      productType: productType === "school" ? "school" : "tasks",
+      workspaceId: generateId("WS"),
+    });
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: "admin",
+      company: company._id,
+      userId: generateId("USR"),
+      organisationId: generateId("ORG"),
+    });
 
     const platformKey = platform === "app" ? "app" : "web";
     const sessionId = await startSession(user, platformKey);
