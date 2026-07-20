@@ -88,4 +88,21 @@ const issueStudentLogin = async (student, companyId, loginEmail) => {
   return { ok: true };
 };
 
-module.exports = { issueTeacherLogin, issueStudentLogin };
+const sendWelcomeEmail = async ({ to, personName, companyName }) => {
+  await sendEmail({
+    to,
+    subject: `You've been added to ${companyName} on Simpta`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto;">
+        <h2 style="color:#0f172a;">Welcome to ${companyName}</h2>
+        <p>${personName} has been added to the ${companyName} workspace on Simpta.</p>
+        <p>Ask your administrator for your login details, or if you already have them, log in below.</p>
+        <a href="${process.env.FRONTEND_URL}" style="display:inline-block;margin-top:12px;padding:10px 18px;background:#0d9488;color:#fff;text-decoration:none;border-radius:6px;">
+          Go to Simpta
+        </a>
+      </div>
+    `,
+  });
+};
+
+module.exports = { issueTeacherLogin, issueStudentLogin, sendWelcomeEmail };

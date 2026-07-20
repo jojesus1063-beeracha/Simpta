@@ -4,9 +4,10 @@ const XLSX = require("xlsx");
 const Teacher = require("../models/Teacher");
 const Student = require("../models/Student");
 const SchoolClass = require("../models/SchoolClass");
+const Company = require("../models/Company");
 const { protect, adminOnly } = require("../middleware/auth");
 const { checkLicense } = require("../middleware/license");
-const { issueTeacherLogin, issueStudentLogin } = require("../utils/issueLogin");
+const { issueTeacherLogin, issueStudentLogin, sendWelcomeEmail } = require("../utils/issueLogin");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -48,6 +49,8 @@ router.post("/school", protect, checkLicense, adminOnly, upload.single("file"), 
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
     const issueLogins = req.body.issueLogins === "true";
+    const company = await Company.findById(req.user.company);
+    const companyName = company?.name || "your workspace";
     const wb = XLSX.read(req.file.buffer, { type: "buffer" });
 
     const getSheet = (name) => {
@@ -99,7 +102,12 @@ router.post("/school", protect, checkLicense, adminOnly, upload.single("file"), 
 
         if (issueLogins) {
           const result = await issueTeacherLogin(teacher, req.user.company);
-          if (!result.ok) loginsSkippedSeatLimit++;
+          if (!result.ok) {
+            loginsSkippedSeatLimit++;
+            await sendWelcomeEmail({ to: teacher.email, personName: teacher.name, companyName });
+          }
+        } else {
+          await sendWelcomeEmail({ to: teacher.email, personName: teacher.name, companyName });
         }
       } catch (err) {
         errors.push(`Teacher ${email}: ${err.message}`);
@@ -150,9 +158,16 @@ router.post("/school", protect, checkLicense, adminOnly, upload.single("file"), 
         });
         studentsCreated++;
 
-        if (issueLogins && parentEmail) {
-          const result = await issueStudentLogin(student, req.user.company, parentEmail);
-          if (!result.ok) loginsSkippedSeatLimit++;
+        if (parentEmail) {
+          if (issueLogins) {
+            const result = await issueStudentLogin(student, req.user.company, parentEmail);
+            if (!result.ok) {
+              loginsSkippedSeatLimit++;
+              await sendWelcomeEmail({ to: parentEmail, personName: student.name, companyName });
+            }
+          } else {
+            await sendWelcomeEmail({ to: parentEmail, personName: student.name, companyName });
+          }
         }
       } catch (err) {
         errors.push(`Student ${name}: ${err.message}`);

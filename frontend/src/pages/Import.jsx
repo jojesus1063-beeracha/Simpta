@@ -78,8 +78,11 @@ const Import = () => {
             />
             <label className="flex items-center gap-2 text-sm text-slate-600">
               <input type="checkbox" checked={issueLogins} onChange={(e) => setIssueLogins(e.target.checked)} />
-              Email login credentials to teachers and student parent/contact emails
+              Also create login access (not just a welcome email) for teachers and students with a parent/contact email
             </label>
+            <p className="text-xs text-slate-400">
+              Everyone imported with an email address gets a welcome email either way, with a link to log in.
+            </p>
             <button
               type="submit"
               disabled={!file || importing}
