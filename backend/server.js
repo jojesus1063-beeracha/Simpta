@@ -75,8 +75,37 @@ const grantSuperAdmin = async () => {
   }
 };
 
+const { generateId } = require("./utils/generateId");
+
+// One-time backfill: companies/users created before workspace/org/user IDs
+// existed won't have them. Safe to run every boot - only acts on records
+// still missing an ID.
+const backfillIds = async () => {
+  const companiesWithoutId = await Company.find({ workspaceId: { $exists: false } });
+  for (const company of companiesWithoutId) {
+    company.workspaceId = generateId("WS");
+    await company.save();
+  }
+  if (companiesWithoutId.length > 0) {
+    console.log(`Backfilled workspaceId for ${companiesWithoutId.length} compan(y/ies).`);
+  }
+
+  const usersWithoutId = await User.find({ userId: { $exists: false } });
+  for (const user of usersWithoutId) {
+    user.userId = generateId("USR");
+    if (user.role === "admin" && !user.organisationId) {
+      user.organisationId = generateId("ORG");
+    }
+    await user.save();
+  }
+  if (usersWithoutId.length > 0) {
+    console.log(`Backfilled userId for ${usersWithoutId.length} user(s).`);
+  }
+};
+
 connectDB().then(async () => {
   await migrateLegacyData();
+  await backfillIds();
   await grantSuperAdmin();
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
