@@ -20,6 +20,7 @@ const photoRoutes = require("./routes/photoRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const importRoutes = require("./routes/importRoutes");
+const stockRoutes = require("./routes/stockRoutes");
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use("/api/photobox", photoRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/import", importRoutes);
+app.use("/api/stock", stockRoutes);
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 

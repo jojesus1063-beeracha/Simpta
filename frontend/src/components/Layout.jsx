@@ -54,16 +54,21 @@ const Layout = ({ title, children }) => {
                 <NavLink to="/classes" className={linkClass}>Classes</NavLink>
                 <NavLink to="/attendance" className={linkClass}>Attendance</NavLink>
                 <NavLink to="/import" className={linkClass}>Import</NavLink>
+                <NavLink to="/stock" className={linkClass}>Stock</NavLink>
               </>
             )}
             {isSchool && user?.role === "teacher" && (
               <>
                 <NavLink to="/teacher-portal" className={linkClass}>My profile</NavLink>
                 <NavLink to="/attendance" className={linkClass}>Attendance</NavLink>
+                <NavLink to="/stock" className={linkClass}>Stock</NavLink>
               </>
             )}
             {isSchool && user?.role === "student" && (
-              <NavLink to="/student-portal" className={linkClass}>My profile</NavLink>
+              <>
+                <NavLink to="/student-portal" className={linkClass}>My profile</NavLink>
+                <NavLink to="/stock" className={linkClass}>Stock</NavLink>
+              </>
             )}
 
             {user?.isSuperAdmin && (
