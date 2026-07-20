@@ -19,6 +19,7 @@ const feedRoutes = require("./routes/feedRoutes");
 const photoRoutes = require("./routes/photoRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const importRoutes = require("./routes/importRoutes");
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use("/api/feed", feedRoutes);
 app.use("/api/photobox", photoRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/import", importRoutes);
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 

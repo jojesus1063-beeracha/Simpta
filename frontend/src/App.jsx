@@ -14,6 +14,7 @@ import Teachers from "./pages/Teachers";
 import Students from "./pages/Students";
 import Classes from "./pages/Classes";
 import Attendance from "./pages/Attendance";
+import Import from "./pages/Import";
 import TeacherPortal from "./pages/TeacherPortal";
 import StudentPortal from "./pages/StudentPortal";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -45,6 +46,7 @@ function App() {
       <Route path="/students" element={<ProtectedRoute adminOnly><Students /></ProtectedRoute>} />
       <Route path="/classes" element={<ProtectedRoute adminOnly><Classes /></ProtectedRoute>} />
       <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
+      <Route path="/import" element={<ProtectedRoute adminOnly><Import /></ProtectedRoute>} />
       <Route path="/teacher-portal" element={<ProtectedRoute><TeacherPortal /></ProtectedRoute>} />
       <Route path="/student-portal" element={<ProtectedRoute><StudentPortal /></ProtectedRoute>} />
 
