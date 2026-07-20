@@ -4,6 +4,8 @@ const User = require("../models/User");
 const { protect, adminOnly } = require("../middleware/auth");
 const { checkLicense } = require("../middleware/license");
 const { canCreateTasks } = require("../utils/permissions");
+const { checkSeatAvailable } = require("../utils/seatLimit");
+const { generateId } = require("../utils/generateId");
 const { sendEmail } = require("../utils/sendEmail");
 
 const router = express.Router();
@@ -19,12 +21,22 @@ router.get("/", protect, checkLicense, async (req, res) => {
   res.json(users);
 });
 
+// @route  GET /api/users/directory
+// @desc   Lightweight name list for @mentions and chat - available to anyone in the company
+router.get("/directory", protect, checkLicense, async (req, res) => {
+  const users = await User.find({ company: req.user.company }).select("name _id");
+  res.json(users);
+});
+
 // @route  POST /api/users
 // @desc   Admin creates a new user account in their own company and emails them a temporary password
 router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   try {
     const { name, email, role } = req.body;
     if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
+
+    const seat = await checkSeatAvailable(req.user.company);
+    if (!seat.ok) return res.status(403).json({ message: seat.message });
 
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) return res.status(409).json({ message: "An account with that email already exists" });
@@ -36,6 +48,7 @@ router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
       password: tempPassword,
       role: role === "admin" ? "admin" : "member",
       company: req.user.company,
+      userId: generateId("USR"),
     });
 
     await sendEmail({

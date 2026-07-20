@@ -4,6 +4,8 @@ const Student = require("../models/Student");
 const User = require("../models/User");
 const { protect, adminOnly } = require("../middleware/auth");
 const { checkLicense } = require("../middleware/license");
+const { checkSeatAvailable } = require("../utils/seatLimit");
+const { generateId } = require("../utils/generateId");
 const { sendEmail } = require("../utils/sendEmail");
 
 const router = express.Router();
@@ -13,8 +15,12 @@ const issueLoginFor = async (student, req, loginEmail) => {
   if (existingUser) {
     student.userAccount = existingUser._id;
     await student.save();
-    return;
+    return { ok: true };
   }
+
+  const seat = await checkSeatAvailable(req.user.company);
+  if (!seat.ok) return seat;
+
   const tempPassword = crypto.randomBytes(6).toString("hex");
   const user = await User.create({
     name: student.name,
@@ -22,6 +28,7 @@ const issueLoginFor = async (student, req, loginEmail) => {
     password: tempPassword,
     role: "student",
     company: req.user.company,
+    userId: generateId("USR"),
   });
   student.userAccount = user._id;
   await student.save();
@@ -42,6 +49,7 @@ const issueLoginFor = async (student, req, loginEmail) => {
       </div>
     `,
   });
+  return { ok: true };
 };
 
 // @route  GET /api/students
@@ -81,7 +89,7 @@ router.get("/me", protect, checkLicense, async (req, res) => {
 // @route  POST /api/students
 router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
   try {
-    const { name, admissionNumber, rollNumber, dob, gender, class: classId, parentName, parentPhone, parentEmail, issueLogin } =
+    const { name, admissionNumber, rollNumber, dob, gender, class: classId, parentName, parentPhone, parentEmail, photoUrl, issueLogin } =
       req.body;
     if (!name) return res.status(400).json({ message: "Name is required" });
     if (issueLogin && !parentEmail) {
@@ -99,11 +107,16 @@ router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
       parentName,
       parentPhone,
       parentEmail,
+      photoUrl,
     });
 
-    if (issueLogin) await issueLoginFor(student, req, parentEmail);
+    let loginWarning = null;
+    if (issueLogin) {
+      const result = await issueLoginFor(student, req, parentEmail);
+      if (!result.ok) loginWarning = result.message;
+    }
 
-    res.status(201).json(student);
+    res.status(201).json({ ...student.toObject(), loginWarning });
   } catch (err) {
     res.status(500).json({ message: "Failed to create student", error: err.message });
   }
@@ -124,7 +137,8 @@ router.post("/:id/invite", protect, checkLicense, adminOnly, async (req, res) =>
   if (!student) return res.status(404).json({ message: "Student not found" });
   if (student.userAccount) return res.status(400).json({ message: "This student already has login access" });
   if (!student.parentEmail) return res.status(400).json({ message: "Add a parent/contact email first" });
-  await issueLoginFor(student, req, student.parentEmail);
+  const result = await issueLoginFor(student, req, student.parentEmail);
+  if (!result.ok) return res.status(403).json({ message: result.message });
   res.json(student);
 });
 

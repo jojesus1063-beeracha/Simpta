@@ -4,6 +4,8 @@ const Teacher = require("../models/Teacher");
 const User = require("../models/User");
 const { protect, adminOnly } = require("../middleware/auth");
 const { checkLicense } = require("../middleware/license");
+const { checkSeatAvailable } = require("../utils/seatLimit");
+const { generateId } = require("../utils/generateId");
 const { sendEmail } = require("../utils/sendEmail");
 
 const router = express.Router();
@@ -13,8 +15,12 @@ const issueLoginFor = async (teacher, req) => {
   if (existingUser) {
     teacher.userAccount = existingUser._id;
     await teacher.save();
-    return;
+    return { ok: true };
   }
+
+  const seat = await checkSeatAvailable(req.user.company);
+  if (!seat.ok) return seat;
+
   const tempPassword = crypto.randomBytes(6).toString("hex");
   const user = await User.create({
     name: teacher.name,
@@ -22,6 +28,7 @@ const issueLoginFor = async (teacher, req) => {
     password: tempPassword,
     role: "teacher",
     company: req.user.company,
+    userId: generateId("USR"),
   });
   teacher.userAccount = user._id;
   await teacher.save();
@@ -42,6 +49,7 @@ const issueLoginFor = async (teacher, req) => {
       </div>
     `,
   });
+  return { ok: true };
 };
 
 // @route  GET /api/teachers
@@ -87,9 +95,13 @@ router.post("/", protect, checkLicense, adminOnly, async (req, res) => {
       photoUrl,
     });
 
-    if (issueLogin) await issueLoginFor(teacher, req);
+    let loginWarning = null;
+    if (issueLogin) {
+      const result = await issueLoginFor(teacher, req);
+      if (!result.ok) loginWarning = result.message;
+    }
 
-    res.status(201).json(teacher);
+    res.status(201).json({ ...teacher.toObject(), loginWarning });
   } catch (err) {
     res.status(500).json({ message: "Failed to create teacher", error: err.message });
   }
@@ -119,7 +131,8 @@ router.post("/:id/invite", protect, checkLicense, adminOnly, async (req, res) =>
   const teacher = await Teacher.findOne({ _id: req.params.id, company: req.user.company });
   if (!teacher) return res.status(404).json({ message: "Teacher not found" });
   if (teacher.userAccount) return res.status(400).json({ message: "This teacher already has login access" });
-  await issueLoginFor(teacher, req);
+  const result = await issueLoginFor(teacher, req);
+  if (!result.ok) return res.status(403).json({ message: result.message });
   res.json(teacher);
 });
 

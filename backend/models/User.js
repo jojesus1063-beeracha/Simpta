@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["admin", "member", "teacher", "student"], default: "member" },
+    userId: { type: String, unique: true, sparse: true },
+    organisationId: { type: String, default: null },
     company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
     isSuperAdmin: { type: Boolean, default: false },
     permissions: {
@@ -36,6 +38,8 @@ userSchema.methods.comparePassword = function (candidate) {
 userSchema.methods.toSafeObject = function () {
   return {
     id: this._id,
+    userId: this.userId,
+    organisationId: this.organisationId,
     name: this.name,
     email: this.email,
     role: this.role,
