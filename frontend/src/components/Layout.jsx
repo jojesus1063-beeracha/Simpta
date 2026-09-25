@@ -20,13 +20,13 @@ const Layout = ({ title, children }) => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 font-body">
-      <aside className="flex w-60 flex-col justify-between bg-ink px-4 py-6 text-slate-300">
+    <div className="flex min-h-screen flex-col bg-slate-50 font-body md:h-screen md:flex-row">
+      <aside className="flex w-full shrink-0 flex-col justify-between bg-ink md:w-60 px-4 py-6 text-slate-300">
         <div>
           <div className="mb-8 px-2">
             <Logo compact />
           </div>
-          <nav className="space-y-1">
+          <nav className="flex flex-wrap gap-1 md:block md:space-y-1">
             {!user?.isSuperAdmin && (
               <NavLink to="/feed" className={linkClass}>Feed</NavLink>
             )}
@@ -38,6 +38,9 @@ const Layout = ({ title, children }) => {
               <NavLink to="/tasks" className={linkClass}>
                 {user?.role === "admin" ? "All tasks" : "My tasks"}
               </NavLink>
+            )}
+            {!isSchool && user?.role === "admin" && (
+              <NavLink to="/billing" className={linkClass}>Billing readiness</NavLink>
             )}
             {!isSchool && user?.role === "admin" && (
               <NavLink to="/team" className={linkClass}>Team</NavLink>
@@ -98,12 +101,12 @@ const Layout = ({ title, children }) => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="min-w-0 flex-1 overflow-y-auto">
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
           <h1 className="font-display text-xl font-bold text-slate-900">{title}</h1>
           {!user?.isSuperAdmin && <NotificationBell />}
         </header>
-        <div className="p-8">{children}</div>
+        <div className="p-4 md:p-8">{children}</div>
       </main>
     </div>
   );
