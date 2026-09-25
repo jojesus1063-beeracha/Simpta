@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
+import Billing from "./pages/Billing";
 import Team from "./pages/Team";
 import SuperAdmin from "./pages/SuperAdmin";
 import SchoolDashboard from "./pages/SchoolDashboard";
@@ -33,6 +34,8 @@ function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
+      <Route path="/billing" element={<ProtectedRoute adminOnly><Billing /></ProtectedRoute>} />
 
       {/* Task Manager product */}
       <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
